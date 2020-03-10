@@ -20,3 +20,8 @@ Any <command> must be separated from envdir <name>s by a double hyphen (--).
 If no <command> is given, "env" is run which will print the contents of the
 environment.
 
+Bash completion is available for <name>s and options.  Enable it by adding
+the following to your ~/.bashrc file:
+
+    source <(envd --complete)
+

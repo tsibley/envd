@@ -21,7 +21,10 @@
 # If no <command> is given, "env" is run which will print the contents of the
 # environment.
 #
-# XXX TODO: completion of available envdirs
+# Bash completion is available for <name>s and options.  Enable it by adding
+# the following to your ~/.bashrc file:
+#
+#     source <(envd --complete)
 #
 set -euo pipefail
 shopt -s inherit_errexit
@@ -37,6 +40,11 @@ main() {
 
             --list|-l)
                 list
+                exit 0;;
+
+            --complete)
+                shift
+                completions "$@"
                 exit 0;;
 
             # No more envdirs; the rest of the arguments are a command list.
@@ -111,6 +119,49 @@ find-envd() {
         fi
         cd ..
     done
+}
+
+# Bash completions support.
+completions() {
+    # With no arguments, print shell which can be sourced to setup completion:
+    #
+    #   source <(envd --complete)
+    #
+    if [[ $# -eq 0 ]]; then
+        echo "complete -o default -o bashdefault -C 'envd --complete' -X '"'!&*'"' envd"
+
+    # With arguments, do completions.  Note that anything we print will be
+    # filtered to matches by the -X option above.
+    else
+        local cword="$2"
+        local previous_cword="$3"
+        case "$cword" in
+            -*)
+                printf "%s\n" -l -h --list --help --
+                ;;
+            *)
+                # If the line contains --, we're into command and argument
+                # territory.
+                if [[ "$COMP_LINE" =~ \ --\  ]]; then
+                    # The initial word after -- is completed against aliases,
+                    # builtins, commands, and functions.  Otherwise, output
+                    # nothing to let -o default and -o bashdefault kick in.
+                    if [[ "$previous_cword" == -- ]]; then
+                        compgen -abc -A function "$cword"
+                    fi
+
+                # If we haven't seen -- yet, then we're completing envdir names
+                # in our env.ds.
+                else
+                    for envd in $(find-envd); do
+                        if [[ -d "$envd" ]]; then
+                            (cd "$envd" && printf "%s\n" *)
+                        fi
+                    done
+                fi
+                ;;
+        esac
+    fi
 }
 
 # Trace calls to exec.
