@@ -1,0 +1,22 @@
+usage: envd <name> [<name>] -- <command> [arguments…]
+       envd <name> [<name>]
+       envd --list | -l
+       envd --help | -h
+
+An envdir replacement improved for interactive use.
+
+Runs the given <command> with optional [arguments…] after modifying the
+environment using the named environment directories (envdirs).
+
+Named envdirs are found by looking inside "env.d" directories found in the
+current directory and upwards in the directory hierarchy.  The search stops
+when it hits the filesystem root (/) or $HOME.  If you're within the safety
+of your home directory, this ensures you won't pick up env.d directories
+potentially outside of your control.  Run "envd --list" from any directory to
+see the env.d directories under consideration for that location.
+
+Any <command> must be separated from envdir <name>s by a double hyphen (--).
+
+If no <command> is given, "env" is run which will print the contents of the
+environment.
+
