@@ -42,12 +42,7 @@ main() {
             # No more envdirs; the rest of the arguments are a command list.
             --)
                 shift
-                if [[ $# -gt 0 ]]; then
-                    exec_ "$@"
-                else
-                    exec_ env
-                fi
-                ;;
+                break;;
 
             # Recursively exec-chain into ourselves for each envdir named.
             *)
@@ -57,6 +52,12 @@ main() {
                 exec_ envdir "$dir" "$0" "$@";;
         esac
     done
+
+    if [[ $# -gt 0 ]]; then
+        exec_ "$@"
+    else
+        exec_ env
+    fi
 }
 
 # List all env.d directories and their available envdirs.
