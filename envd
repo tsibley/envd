@@ -62,7 +62,7 @@ main() {
 # List all env.d directories and their available envdirs.
 list() {
     for envd in $(find-envd); do
-        if [[ -e "$envd" ]]; then
+        if [[ -d "$envd" ]]; then
             printf "%s\n" "$envd"
             (cd "$envd" && printf "  %s\n" *)
             printf "\n"
@@ -76,7 +76,7 @@ find-envdir() {
 
     # If name starts with a slash, it's an absolute path; use it directly.
     if [[ "$name" == /* ]]; then
-        if [[ -e "$name" ]]; then
+        if [[ -d "$name" ]]; then
             trace "using" "$name"
             echo "$name"
             return 0
@@ -88,7 +88,7 @@ find-envdir() {
     # Otherwise, it's a name relative to one of the env.d dirs.
     else
         for envd in $(find-envd); do
-            if [[ -e "$envd/$name" ]]; then
+            if [[ -d "$envd/$name" ]]; then
                 trace "found" "$envd/$name"
                 echo "$envd/$name"
                 return 0
