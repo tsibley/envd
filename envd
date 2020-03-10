@@ -1,0 +1,162 @@
+#!/bin/bash
+# usage: envd <name> [<name>] -- <command> [arguments…]
+#        envd <name> [<name>]
+#        envd --list | -l
+#        envd --help | -h
+#
+# An envdir replacement improved for interactive use.
+#
+# Runs the given <command> with optional [arguments…] after modifying the
+# environment using the named environment directories (envdirs).
+#
+# Named envdirs are found by looking inside "env.d" directories found in the
+# current directory and upwards in the directory hierarchy.  The search stops
+# when it hits the filesystem root (/) or $HOME.  If you're within the safety
+# of your home directory, this ensures you won't pick up env.d directories
+# potentially outside of your control.  Run "envd --list" from any directory to
+# see the env.d directories under consideration for that location.
+#
+# Any <command> must be separated from envdir <name>s by a double hyphen (--).
+#
+# If no <command> is given, "env" is run which will print the contents of the
+# environment.
+#
+# XXX TODO: completion of available envdirs
+#
+set -euo pipefail
+shopt -s inherit_errexit
+
+main() {
+    trace "main" "$@"
+
+    for arg; do
+        case "$arg" in
+            --help|-h)
+                usage
+                exit 0;;
+
+            --list|-l)
+                list
+                exit 0;;
+
+            # No more envdirs; the rest of the arguments are a command list.
+            --)
+                shift
+                if [[ $# -gt 0 ]]; then
+                    exec_ "$@"
+                else
+                    exec_ env
+                fi
+                ;;
+
+            # Recursively exec-chain into ourselves for each envdir named.
+            *)
+                shift
+                # A separate statement so errexit notices if find-envdir fails.
+                dir="$(find-envdir "$arg")"
+                exec_ envdir "$dir" "$0" "$@";;
+        esac
+    done
+}
+
+# List all env.d directories and their available envdirs.
+list() {
+    for envd in $(find-envd); do
+        if [[ -e "$envd" ]]; then
+            printf "%s\n" "$envd"
+            (cd "$envd" && printf "  %s\n" *)
+            printf "\n"
+        fi
+    done
+}
+
+# Find an envdir by name in the closest env.d directory.
+find-envdir() {
+    local name="$1"
+
+    # If name starts with a slash, it's an absolute path; use it directly.
+    if [[ "$name" == /* ]]; then
+        if [[ -e "$name" ]]; then
+            trace "using" "$name"
+            echo "$name"
+            return 0
+        else
+            echo "error: absolute path to envdir «$name» does not exit" >&2
+            return 1
+        fi
+
+    # Otherwise, it's a name relative to one of the env.d dirs.
+    else
+        for envd in $(find-envd); do
+            if [[ -e "$envd/$name" ]]; then
+                trace "found" "$envd/$name"
+                echo "$envd/$name"
+                return 0
+            else
+                trace "does not exist" "$envd/$name"
+            fi
+        done
+
+        echo "error: unable to find envdir named «$name»" >&2
+        return 1
+    fi
+}
+
+# Find all env.d directories by walking upwards until we hit the root or home.
+find-envd() {
+    until [[ "$PWD" == / || "$PWD" == "$(dirname "$HOME")" ]]; do
+        if [[ -d "$PWD/env.d" ]]; then
+            echo "$PWD/env.d"
+        fi
+        cd ..
+    done
+}
+
+# Trace calls to exec.
+exec_() {
+    trace "exec" "$@"
+    exec "$@"
+}
+
+# Send tracing output to a file descriptor or named file.
+trace() {
+    (
+        if [[ -n "${ENVD_TRACE:-}" ]]; then
+            local f
+
+            # Numeric values are file descriptors (1 = stdout, 2 = stderr).
+            # Everything else is a filename.
+            if [[ "$ENVD_TRACE" == [0-9]* ]]; then
+                exec >&$ENVD_TRACE
+            else
+                exec >>"$ENVD_TRACE"
+            fi
+
+            printf "trace: %s" "$1"
+            shift
+            if [[ $# -gt 0 ]]; then
+                printf ":"
+                printf " «%s»" "$@"
+            fi
+            printf "\n"
+        fi
+    )
+}
+
+# Print the embedded usage at the top of this file.
+usage() {
+    local line
+    while read -r line; do
+        if [[ $line =~ ^#! ]]; then
+            continue
+        elif [[ $line =~ ^# ]]; then
+            line="${line/##/}"
+            line="${line/# /}"
+            echo "$line"
+        else
+            break
+        fi
+    done < "$0"
+}
+
+main "$@"
