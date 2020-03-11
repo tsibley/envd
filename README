@@ -25,3 +25,33 @@ the following to your ~/.bashrc file:
 
     source <(envd --complete)
 
+As an example, given the following:
+
+    $ pwd
+    /home/tom/seattleflu/backoffice/id3c-production
+
+    $ envd --list
+    /home/tom/seattleflu/backoffice/id3c-production/env.d
+      redcap-kiosk
+      redcap-swab-n-send
+      uwsgi
+
+    /home/tom/seattleflu/env.d
+      id3c
+      slack-webhook-test
+
+    /home/tom/env.d
+      github
+      swift-v1-bedford
+      swift-v1-tsibley
+      swift-v2
+
+Then
+
+    envd redcap-kiosk id3c -- <command>
+
+is equivalent to:
+
+    envdir /home/tom/seattleflu/backoffice/id3c-production/env.d/redcap-kiosk \
+      envdir /home/tom/seattleflu/env.d/id3c \
+        <command>
