@@ -72,11 +72,19 @@ main() {
 list() {
     for envd in $(find-envd); do
         if [[ -d "$envd" ]]; then
-            printf "%s\n" "$envd"
-            (cd "$envd" && printf "  %s\n" *)
-            printf "\n"
+            echo "$envd"
+            for envdir in $(list-envdirs "$envd"); do
+                echo "  $envdir"
+            done
+            echo
         fi
     done
+}
+
+# Find all envdirs within an env.d
+list-envdirs() {
+    local envd="$1"
+    (cd "$envd" && find . -mindepth 1 -type d -not -empty -print | cut -d/ -f2-)
 }
 
 # Find an envdir by name in the closest env.d directory.
@@ -155,7 +163,7 @@ completions() {
                 else
                     for envd in $(find-envd); do
                         if [[ -d "$envd" ]]; then
-                            (cd "$envd" && find . -mindepth 1 -type d -not -empty -print | cut -d/ -f2-)
+                            list-envdirs "$envd"
                         fi
                     done
                 fi
