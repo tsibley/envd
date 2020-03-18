@@ -155,7 +155,7 @@ completions() {
                 else
                     for envd in $(find-envd); do
                         if [[ -d "$envd" ]]; then
-                            (cd "$envd" && printf "%s\n" *)
+                            (cd "$envd" && find . -mindepth 1 -type d -not -empty -print | cut -d/ -f2-)
                         fi
                     done
                 fi
