@@ -84,7 +84,13 @@ list() {
 # Find all envdirs within an env.d
 list-envdirs() {
     local envd="$1"
-    (cd "$envd" && find . -mindepth 1 -type d -not -empty -print | cut -d/ -f2-)
+
+    for envdir in $(cd "$envd" && find . -mindepth 1 -type d -not -empty -print | cut -d/ -f2-); do
+        # Don't suggest dirs which just contain other dirs
+        if [[ -n "$(find "$envd/$envdir" -maxdepth 1 -not -type d -print)" ]]; then
+            echo "$envdir"
+        fi
+    done
 }
 
 # Find an envdir by name in the closest env.d directory.
