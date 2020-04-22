@@ -1,6 +1,6 @@
 #!/bin/bash
-# usage: envd <name> [<name>] -- <command> [arguments…]
-#        envd <name> [<name>]
+# usage: envd <name> [<name>] [<name>=<value>] -- <command> [arguments…]
+#        envd <name> [<name>] [<name>=<value>]
 #        envd --list | -l
 #        envd --help | -h
 #
@@ -15,6 +15,10 @@
 # of your home directory, this ensures you won't pick up env.d directories
 # potentially outside of your control.  Run "envd --list" from any directory to
 # see the env.d directories under consideration for that location.
+#
+# Any arguments which contain an equals sign will be treated as an ad-hoc
+# key-value pair to inject into the environment (similar to the "env" command's
+# syntax) as if it was an entry in an envdir.
 #
 # Any <command> must be separated from envdir <name>s by a double hyphen (--).
 #
@@ -51,6 +55,12 @@ main() {
             --)
                 shift
                 break;;
+
+            # Ad-hoc name=value pairs (i.e. "anonymous envdirs" ;-)
+            *=*)
+                shift
+                export "$arg"
+                ;;
 
             # Recursively exec-chain into ourselves for each envdir named.
             *)
