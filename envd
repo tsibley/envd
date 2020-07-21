@@ -16,6 +16,11 @@
 # potentially outside of your control.  Run "envd --list" from any directory to
 # see the env.d directories under consideration for that location.
 #
+# Any argument starting with a slash (/) will be treated as an absolute path to
+# an envdir.  Any argument starting with "../" will be treated as a relative
+# path to an envdir.  Other relative paths may be given if they do not also
+# match a named envdir in any of the searched "env.d" directories.
+#
 # Any arguments which contain an equals sign will be treated as an ad-hoc
 # key-value pair to inject into the environment (similar to the "env" command's
 # syntax) as if it was an entry in an envdir.
@@ -107,14 +112,15 @@ list-envdirs() {
 find-envdir() {
     local name="$1"
 
-    # If name starts with a slash, it's an absolute path; use it directly.
-    if [[ "$name" == /* ]]; then
+    # If name starts with a slash, it's an absolute path; if "../", it's a
+    # relative path.  Use it directly.
+    if [[ "$name" == /* || "$name" == ../* ]]; then
         if [[ -d "$name" ]]; then
             trace "using" "$name"
             echo "$name"
             return 0
         else
-            echo "error: absolute path to envdir «$name» does not exit" >&2
+            echo "error: absolute or relative path to envdir «$name» does not exit" >&2
             return 1
         fi
 
@@ -129,6 +135,13 @@ find-envdir() {
                 trace "does not exist" "$envd/$name"
             fi
         done
+
+        # Or failing that, check if it's a relative path to a non-env.d dir
+        if [[ -d "$name" ]]; then
+            trace "using" "$name"
+            echo "$name"
+            return 0
+        fi
 
         echo "error: unable to find envdir named «$name»" >&2
         return 1

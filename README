@@ -15,6 +15,11 @@ of your home directory, this ensures you won't pick up env.d directories
 potentially outside of your control.  Run "envd --list" from any directory to
 see the env.d directories under consideration for that location.
 
+Any argument starting with a slash (/) will be treated as an absolute path to
+an envdir.  Any argument starting with "../" will be treated as a relative
+path to an envdir.  Other relative paths may be given if they do not also
+match a named envdir in any of the searched "env.d" directories.
+
 Any arguments which contain an equals sign will be treated as an ad-hoc
 key-value pair to inject into the environment (similar to the "env" command's
 syntax) as if it was an entry in an envdir.
