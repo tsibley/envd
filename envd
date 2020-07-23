@@ -177,9 +177,10 @@ completions() {
                 printf "%s\n" -l -h --list --help --
                 ;;
             *)
-                # If the line contains --, we're into command and argument
+                # If the line contains -- before the position at which we're
+                # completing a word, then we're into command and argument
                 # territory.
-                if [[ "$COMP_LINE" =~ \ --\  ]]; then
+                if [[ "${COMP_LINE:0:$COMP_POINT}" =~ \ --\  ]]; then
                     # The initial word after -- is completed against aliases,
                     # builtins, commands, and functions.  Otherwise, output
                     # nothing to let -o default and -o bashdefault kick in.
